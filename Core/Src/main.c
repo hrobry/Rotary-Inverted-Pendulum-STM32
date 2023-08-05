@@ -29,14 +29,16 @@
 #include <stdbool.h>
 #include "string.h"
 #include "GFX.h"
+#include "displayAndControl2.h"
+#include "engineControl2.h"
 
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-#define RxBuf_SIZE 13
+#define RxBuf_SIZE 35
 
-#define MainBuf_SIZE 13
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -49,264 +51,14 @@
   // uint8_t communicationFrame  [13] = BIT STARTU= 0xFF , P , I , D , START , STOP , buttonLeft , buttonRight  , manual ,encoderUp,encoderDown,PWM, BIT STOPU = 0x00
  UART_HandleTypeDef huart2;
  DMA_HandleTypeDef hdma_usart2_rx;
- uint8_t P ;
- uint8_t I ;
- uint8_t D ;
- uint8_t START ;
- uint8_t STOP ;
- uint8_t leftButton;
- uint8_t rightButton ;
- uint8_t manual ;
- uint8_t encoderUp=0;
- uint8_t encoderDown=0;
- uint32_t PWM=150;
- uint8_t counter=0;
- uint8_t bufer[44];
- bool kierunek = false;
- bool startBool = false;
-
-   char itoaBuffer[20];
-
-   uint32_t data1;
-     uint32_t data2;
- int encoderCounterUp=0;
-  int  encoderCounterDown=0;
-  char* mesage = "message";
-  unsigned char  blank[] = {"                   "};
- unsigned char  stopMessage[] = {"MODE: STOP        "};
- unsigned char messageManualRight[] = { "MODE: MANUAL RIGHT      "};
-unsigned char messageManualLeft[] = { "MODE: MANUAL LEFT      "};
-unsigned char messageStart[] = { "MODE: START       "};
-
-unsigned char  EncDownMessage[] = {"ENC DN : "};
-		      unsigned char  EncUpMessage[] = {"ENC UP : "};
-		      unsigned char  PWMMessage[] = {"PWM : "};
-		      unsigned char  MODEMessage[] = {"MODE: "};
-
  // P,I,D,Start,STOP,LeftButton,RighrButton,manual,encoderUp,encoderDown,PWM
- uint8_t  communicationFrame [13]={1,1,1,1,0,1,0,0,0,0,0,0,1};
+ uint8_t  communicationFrame [RxBuf_SIZE]; // table with data from PC
+ uint8_t  RxBuf[RxBuf_SIZE]; // buffer
+ uint32_t control;
+ uint32_t torque=0; // value of calculated engine torque
+ uint8_t static sendCounter=0; // counter witch is controling sending information
+ int controlOfComm ; // variable witch is controling flow of application
 
-
-
-
-
-uint8_t RxBuf[RxBuf_SIZE];
-uint8_t MainBuf[MainBuf_SIZE];
-uint8_t sendFrame[13];
-
-unsigned char oledFrame[13];
-
-
-void oledTransform()
-{
-	for(int i =0 ; i<13;i++)
-	{
-
-
-
-	}
-
-}
-void frameTransform()
-{
-
-	for(int i=0;i<13;i++)
-	{
-		sendFrame[i]=communicationFrame[i]+48;
-	}
-
-
-
-
-}
-
-void errorCheck()
-{
-
-	if(communicationFrame[0] != 1 && communicationFrame[13]!=1)
-	{int i=0;
-		do{
-
-			HAL_GPIO_TogglePin(LD2_GPIO_Port,LD2_Pin );
-			HAL_Delay(500);
-			i++;
-		}while(i<10);
-
-
-	}
-}
-
- void frameToName(){
-		P = communicationFrame [1];
-		I = communicationFrame [2];
-		D = communicationFrame [3];
-		START = communicationFrame [4];
-		STOP = communicationFrame [5];
-		leftButton = communicationFrame [6];
-		rightButton = communicationFrame [7];
-		manual = communicationFrame [8];
-        communicationFrame [9] = (uint8_t)encoderUp/3;
-		communicationFrame [10] =(uint8_t) encoderDown/3;
-		communicationFrame [11] =(uint8_t) PWM/3;
-
-
-
-
-
-if(counter ==100){
-	for (int i =0 ;i<13;i++){
-
-	//	uint8_t *temp = &communicationFrame[i];
-			//HAL_UART_Transmit(&huart2,temp, 1, 1000);
-
-	}
-
-		counter=0;
-
-
-		}
-counter++;
-   }
-
-
- double _max = 1024;
- double _min=0;
-
-       double _pre_error=0;
-       double _integral=0;
-       double derivative=0;
-	uint32_t setTime = 100;
-	uint32_t now,lasttime=0,timechange;
-	double error, lasterror=0,  errorSum=0, Derror;
-	double Pout,Iout,Dout;
-	uint32_t outPWM;
-	 uint32_t output;
-	 double Doutput;
-
-uint32_t calculatePID( int input, int setpoint ,double P, double I, double D ) {
-
-	    now = HAL_GetTick ();
-		timechange = (now - lasttime);
-		if(timechange >=setTime)
-		{
-
-			     error = setpoint - input;
-
-			    // Proportional term
-			     Pout = P * error;
-
-			    // Integral term
-			     _integral += error * setTime;
-			     Iout = I * _integral;
-
-			    // Derivative term
-			     derivative = (error - _pre_error) / setTime;
-			     Dout = D * derivative;
-
-			    // Calculate total output
-			      Doutput = Pout + Iout + Dout; //110+1000+0
-			    	if (Doutput<0)
-							{
-
-								kierunek = false;
-							}else if(Doutput>0){
-
-
-								kierunek = true;
-							}
-
-			    if( Doutput < _min )
-			        {Doutput =Doutput * -1;}
-			    else if( Doutput > _max )
-			    { output = _max;}
-
-
-
-
-
-
-			    	output=(uint32_t)Doutput;
-
-
-
-
-			    // Save error to previous error
-			    _pre_error = error;
-				lasttime = now;
-
-
-
-
-		}
- return output;
-}
-/*
-	now = HAL_GetTick ();
-	timechange = (now - lasttime);
-	if(timechange >=setTime)
-	{
-		error = setpoint - input;
-		errorSum = errorSum+((error +lasterror)/2);
-		Derror = error-lasterror;
-		Pout = P *error;
-		Iout = I*errorSum;
-		Dout = D*Derror;
-
-		//if (Iout >1024){Iout = 1024;} //if (Iout >255){Iout = 255;}
-		if (Iout >255){Iout = 255;} //if (Iout >255){Iout = 255;}
-		if(Iout <0){Iout =0;}
-
-		outPWM = Pout + Iout + Dout;
-
-
-		if (outPWM >1024){outPWM= 1024;}
-				if(outPWM <0){outPWM = 0;}
-
-
-				lasterror = error;
-				lasttime = now;
-
-
-
-	}
-
-	if (input <setpoint)
-	{
-
-		kierunek = false;
-	}else if(input >setpoint){
-
-
-		kierunek = true;
-	}
-
-   	if (input >setpoint)
-				{
-
-					kierunek = false;
-				}else if(input <setpoint){
-
-
-					kierunek = true;
-				}
-
-			    return outPWM;
-			}
-
-
-*/
-void initWork()
-{
-	int i=0;
-	do{
-
-		HAL_GPIO_TogglePin(LD2_GPIO_Port,LD2_Pin );
-		HAL_Delay(300);
-		i++;
-	}while(i<10);
-
-
-}
 
 /* USER CODE END PM */
 
@@ -324,24 +76,6 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-//void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-//HAL_GPIO_TogglePin(LD2_GPIO_Port,LD2_Pin );
-	//static uint8_t Data[13]; // Tablica przechowujaca wysylana wiadomosc.
-
-	////
-	//HAL_UART_Transmit_DMA(&huart1, Data, 40); // Rozpoczecie nadawania danych z wykorzystaniem przerwan
-//	HAL_UART_Receive_DMA(&huart2, communicationFrame, 13); // Ponowne włączenie nasłuchiwania
-
-
-
-//	frameToName();
-//	sprintf(Data, "%s", communicationFrame);
-//	HAL_UART_Transmit_DMA(&huart2, Data, 13);
-
-//}
-
-
-
 
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart , uint16_t Size)
@@ -349,11 +83,19 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart , uint16_t Size)
 	if(huart->Instance==USART2)
 	{
 
-		memcpy( communicationFrame,RxBuf ,Size);
+		for (int i = 0 ; i<RxBuf_SIZE;i++){
+						memcpy( &communicationFrame[i],&RxBuf[i] ,Size);
+
+				}
+
+
 
 		HAL_UARTEx_ReceiveToIdle_DMA(&huart2,RxBuf,RxBuf_SIZE);
 
+		controlOfComm =1;// one if communication arrived
+
 	}
+
 
 }
 
@@ -363,178 +105,6 @@ void send_string(char* s)
 	HAL_UART_Transmit(&huart2, (uint8_t*)s, strlen(s), 1000);
 }
 
-
-
-void firstScreenOled(){
-
-	//  send_string(mesage);
-
-
-              unsigned char* OledString;
-		      OledString =( unsigned char*)sendFrame;
-		     // GFX_draw_string(0, 0, OledString, WHITE,BLACK, 1, 1);
-		      GFX_draw_string(25, 25, OledString, WHITE,BLACK, 0, 0);
-		      GFX_draw_string(0, 45, OledString, WHITE,BLACK, 1, 1);
-		      SSD1306_draw_fast_hline(0,43,200,WHITE);
-		      GFX_draw_string(0, 33, EncUpMessage , WHITE,BLACK, 1, 1);
-
-		      if (encoderCounterUp >=1000)
-		     		      {
-		     		    	  itoa(encoderCounterUp,itoaBuffer,10);
-		     		    	  		      GFX_draw_string(60, 33, ( unsigned char*)itoaBuffer, WHITE,BLACK, 1, 1);
-
-
-		     		      }else
-		     		      {
-		     		    	   GFX_draw_string(60, 33,( unsigned char*)blank, WHITE,BLACK, 1, 1);
-		     		    	  itoa(encoderCounterUp,itoaBuffer,10);
-		     		    	   GFX_draw_string(60, 33, ( unsigned char*)itoaBuffer, WHITE,BLACK, 1, 1);
-
-
-		     		      }
-
-
-		      SSD1306_draw_fast_hline(0,32,200,WHITE);
-		      GFX_draw_string(0, 22, EncDownMessage, WHITE,BLACK, 1, 1);
-
-		      if (encoderCounterDown >=1000)
-		  		     		      {
-		    	    itoa(encoderCounterDown,itoaBuffer,10);
-		    			      GFX_draw_string(60, 22, ( unsigned char*)itoaBuffer, WHITE,BLACK, 1, 1);
-
-
-		  		     		      }else
-		  		     		      {
-		  		     		    	   GFX_draw_string(60, 22,( unsigned char*)blank, WHITE,BLACK, 1, 1);
-		  		     		        itoa(encoderCounterDown,itoaBuffer,10);
-		  		     		    		      GFX_draw_string(60, 22, ( unsigned char*)itoaBuffer, WHITE,BLACK, 1, 1);
-
-
-		  		     		      }
-
-
-		      SSD1306_draw_fast_hline(0,21,200,WHITE);
-		      GFX_draw_string(0, 11,PWMMessage , WHITE,BLACK, 1, 1);
-		      itoa(PWM,itoaBuffer,10);
-		      GFX_draw_string(60, 11, ( unsigned char*)itoaBuffer, WHITE,BLACK, 1, 1);
-		      SSD1306_draw_fast_hline(0,10,200,WHITE);
-		      GFX_draw_string(0, 0, MODEMessage, WHITE,BLACK, 1, 1);
-
-
-
-			  SSD1306_display_repaint();
-
-}
-
-
-
-
-void engineControl()
-{
-
-	 encoderCounterUp = htim3.Instance->CNT;
-
-
-
-	if (START == 1&& STOP == 0 && manual == 0)
-		{
-
-		   GFX_draw_string(0, 0,messageStart, WHITE,BLACK, 1, 1);
-		      SSD1306_display_repaint();
-
-if (encoderCounterUp>500 && encoderCounterUp <700)
-{
-
-        PWM=calculatePID( encoderCounterUp, 600 , 4.5, 0,  0.);
-
-
-			//PWM =calculatePID(0,encoderCounterUp);
-			 if(kierunek)
-						            {
-
-
-						             HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8,  GPIO_PIN_SET);//podlaczenie sterowania silnikiem
-						             HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9,  GPIO_PIN_RESET);//podlaczenie sterowania silnikiem
-						             HAL_Delay(10);
-						             __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, PWM);
-						            }else{
-
-
-
-						            	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8,  GPIO_PIN_RESET);
-						            	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9,  GPIO_PIN_SET);
-						            	HAL_Delay(10);
-						            	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, PWM);
-						            }
-
-}else{
-	PWM=0;
-    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, PWM);
-
-	/*
-	if(encoderCounterDown <-2000 && startBool == false){
-		PWM=150;
-                                     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8,  GPIO_PIN_SET);//podlaczenie sterowania silnikiem
-						             HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9,  GPIO_PIN_RESET);//podlaczenie sterowania silnikiem
-						             HAL_Delay(10);
-						             __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, PWM);
-						             startBool = true;
-
-		}
-	if(encoderCounterDown >4000 && startBool == true){
-		PWM=150;
-		   	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8,  GPIO_PIN_RESET);
-								            	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9,  GPIO_PIN_SET);
-								            	HAL_Delay(10);
-								            	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, PWM);
-								            	startBool = false;
-		}
-*/////////////////
-
-		}
-
-
-
-
-		}
-		if (START == 0 && STOP == 1 && manual == 0)
-		{
-			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8,  GPIO_PIN_RESET);
-									            	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
-									            	HAL_Delay(10);
-									            	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
-			 GFX_draw_string(0, 0, stopMessage, WHITE,BLACK, 1, 1);
-
-			         SSD1306_display_repaint();
-		}
-		if (manual == 1 && leftButton==1 && rightButton == 0)
-				{
-
-			 GFX_draw_string(0, 0, messageManualLeft, WHITE,BLACK, 1, 1);
-					      SSD1306_display_repaint();
-
-					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8,  GPIO_PIN_RESET);
-					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9,  GPIO_PIN_SET);
-					HAL_Delay(10);
-					__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 400);
-				}
-		if (manual == 1 && leftButton==0 && rightButton == 1)
-						{
-
-
-			GFX_draw_string(0, 0, messageManualRight, WHITE,BLACK, 1, 1);
-								      SSD1306_display_repaint();
-
-					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8,  GPIO_PIN_SET);
-					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9,  GPIO_PIN_RESET);
-					HAL_Delay(10);
-					__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 400);
-						}
-
-
-
-
-		}
 
 /* USER CODE END 0 */
 
@@ -561,7 +131,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  // DMA before usart !!
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -570,22 +140,14 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
-
   MX_TIM4_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
- //SSD1306_init();
-  SSD1306_init();
+  // DMA before usart !!
+
   HAL_UARTEx_ReceiveToIdle_DMA(&huart2,RxBuf,RxBuf_SIZE);
   __HAL_DMA_DISABLE_IT(&hdma_usart2_rx,DMA_IT_HT);
 
-
-
-
-  //HAL_TIM_Encoder_Start_DMA (&htim4, TIM_CHANNEL_1,tim4CH1,tim4CH2, 8);
-
- // __HAL_UART_ENABLE_IT(&huart2, UART_IT_IDLE);
- // HAL_UART_Receive_DMA(&huart2, communicationFrame, 13);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -593,42 +155,37 @@ int main(void)
 
 
 
-  	HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL); // enkoder dol
-  	HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL); // enkoder gora
-    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); // wysterowanie silnika
-    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
-    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
-    initWork();
-    firstScreenOled();
-
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); // engine power control
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2); // engine direction control
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3); // engine direction control
+    HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL); // enkoder down
+    HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL); // encoder up
+    SSD1306_init(); // initialization of oled
+    firstScreenOled();// painted first oled
+    initWork(); // information of ended initialization
 
 
   while (1)
   {
 
-	  encoderCounterUp = htim3.Instance->CNT;
-	   encoderCounterDown = htim4.Instance->CNT;
-	   // encoderCounterUp = data1;
 
 
-	  frameToName();
-	  errorCheck();
-	  frameTransform();
-	  firstScreenOled();
+	  oledFirstStageControl(communicationFrame); // paint first stage
+	  encoderDownstageControl(); // painting encoder down value
+	  encoderUpstageControl(); // paiting encoder up value
+	  engineControl(communicationFrame, &torque, &controlOfComm); // control engine and calculate pid values
+
+		 if (sendCounter >250)
+					            {
+			 sending(&torque);// sending information to PC
+  	         sendCounter=sendCounter-250;
+             }else {
+
+		     sendCounter++;
+
+		            }
 
 
-	    engineControl();
-
-
-	 // PWM=arm_pid_q15(arm_pid,encoderCounterUp);
-
-
-	   // encoderCounterUp = htim4.Instance->CNT;
-		//encoderCounterDown = htim3.Instance->CNT;
-		//itoa(encoderCounterUp,itoaBuffer,10);
-		//send_string(itoaBuffer);
-	      //   	itoa(encoderCounterDown,itoaBuffer,10);
-			//	send_string(itoaBuffer);
 
 
 

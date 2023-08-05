@@ -1,0 +1,4 @@
+engineControl2.c:47:6:send_strings	16	static
+engineControl2.c:54:11:calculatePID	56	static
+engineControl2.c:86:19:pidsConvert	128	static
+engineControl2.c:111:15:engineControl	24	static

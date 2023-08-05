@@ -7,7 +7,9 @@
 C_SRCS += \
 ../Core/Src/GFX.c \
 ../Core/Src/SSD1306.c \
+../Core/Src/displayAndControl2.c \
 ../Core/Src/dma.c \
+../Core/Src/engineControl2.c \
 ../Core/Src/gpio.c \
 ../Core/Src/i2c.c \
 ../Core/Src/main.c \
@@ -22,7 +24,9 @@ C_SRCS += \
 C_DEPS += \
 ./Core/Src/GFX.d \
 ./Core/Src/SSD1306.d \
+./Core/Src/displayAndControl2.d \
 ./Core/Src/dma.d \
+./Core/Src/engineControl2.d \
 ./Core/Src/gpio.d \
 ./Core/Src/i2c.d \
 ./Core/Src/main.d \
@@ -37,7 +41,9 @@ C_DEPS += \
 OBJS += \
 ./Core/Src/GFX.o \
 ./Core/Src/SSD1306.o \
+./Core/Src/displayAndControl2.o \
 ./Core/Src/dma.o \
+./Core/Src/engineControl2.o \
 ./Core/Src/gpio.o \
 ./Core/Src/i2c.o \
 ./Core/Src/main.o \
@@ -57,7 +63,7 @@ Core/Src/%.o: ../Core/Src/%.c Core/Src/subdir.mk
 clean: clean-Core-2f-Src
 
 clean-Core-2f-Src:
-	-$(RM) ./Core/Src/GFX.d ./Core/Src/GFX.o ./Core/Src/SSD1306.d ./Core/Src/SSD1306.o ./Core/Src/dma.d ./Core/Src/dma.o ./Core/Src/gpio.d ./Core/Src/gpio.o ./Core/Src/i2c.d ./Core/Src/i2c.o ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/stm32f4xx_hal_msp.d ./Core/Src/stm32f4xx_hal_msp.o ./Core/Src/stm32f4xx_it.d ./Core/Src/stm32f4xx_it.o ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/system_stm32f4xx.d ./Core/Src/system_stm32f4xx.o ./Core/Src/tim.d ./Core/Src/tim.o ./Core/Src/usart.d ./Core/Src/usart.o
+	-$(RM) ./Core/Src/GFX.d ./Core/Src/GFX.o ./Core/Src/SSD1306.d ./Core/Src/SSD1306.o ./Core/Src/displayAndControl2.d ./Core/Src/displayAndControl2.o ./Core/Src/dma.d ./Core/Src/dma.o ./Core/Src/engineControl2.d ./Core/Src/engineControl2.o ./Core/Src/gpio.d ./Core/Src/gpio.o ./Core/Src/i2c.d ./Core/Src/i2c.o ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/stm32f4xx_hal_msp.d ./Core/Src/stm32f4xx_hal_msp.o ./Core/Src/stm32f4xx_it.d ./Core/Src/stm32f4xx_it.o ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/system_stm32f4xx.d ./Core/Src/system_stm32f4xx.o ./Core/Src/tim.d ./Core/Src/tim.o ./Core/Src/usart.d ./Core/Src/usart.o
 
 .PHONY: clean-Core-2f-Src
 

@@ -1,0 +1,7 @@
+displayAndControl.c:15:6:firstScreenOled	136	static
+displayAndControl.c:83:6:startOled	56	static
+displayAndControl.c:90:6:stopOled	56	static
+displayAndControl.c:97:14:manualLeftOled	56	static
+displayAndControl.c:106:14:manualrightOled	64	static
+displayAndControl.c:113:6:initWork	16	static
+displayAndControl.c:126:6:errorCheck	24	static
